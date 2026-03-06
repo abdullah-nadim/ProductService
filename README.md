@@ -246,9 +246,9 @@ dotnet run
 | Technology | Version | Purpose |
 |---|---|---|
 | .NET / ASP.NET Core | 9.0 | Runtime + HTTP API |
-| Entity Framework Core | 9.0 | ORM |
+| Entity Framework Core | 9.0.9 | ORM |
 | Npgsql | 9.0.4 | PostgreSQL driver |
 | RabbitMQ.Client | 6.8.1 | Message broker |
-| AutoMapper | 13.0.1 | Object mapping |
+| AutoMapper | 15.0.1 | Object mapping |
 | Swagger / Swashbuckle | 6.5.0 | API documentation |
 | Docker | — | Containerization |
