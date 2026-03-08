@@ -9,35 +9,36 @@ using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ─── Database ─────────────────────────────────────────────────────────────────
+// --- Database -----------------------------------------------------------------
 builder.Services.AddDbContext<DatabaseContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// ─── Redis Cache (via Infrastructure) ────────────────────────────────────────
+// --- Redis Cache (via Infrastructure) ----------------------------------------
 builder.Services.AddRedisCache(builder.Configuration);
 
-// ─── AutoMapper ───────────────────────────────────────────────────────────────
+// --- AutoMapper ---------------------------------------------------------------
 builder.Services.AddAutoMapper(cfg =>
 {
     cfg.AddProfile<AutoMapperProfile>();
 });
 
-// ─── RabbitMQ (via Infrastructure) ───────────────────────────────────────────
-// Single instance shared between IRabbitMQService consumers and IHostedService (host manages lifecycle)
+// --- RabbitMQ (via Infrastructure) -------------------------------------------
+// Single instance shared between IRabbitMQService consumers and IHostedService
+// (host manages lifecycle via AddHostedService)
 builder.Services.AddSingleton<RabbitMQService>();
 builder.Services.AddSingleton<IRabbitMQService>(sp => sp.GetRequiredService<RabbitMQService>());
 builder.Services.AddHostedService(sp => sp.GetRequiredService<RabbitMQService>());
 builder.Services.AddScoped<IProductEventPublisher, ProductEventPublisher>();
 builder.Services.AddHostedService<ProductEventSubscriber>();
 
-// ─── Application Services ─────────────────────────────────────────────────────
+// --- Application Services -----------------------------------------------------
 builder.Services.AddScoped<IProductServices, ProductServices>();
 
-// ─── Controllers ──────────────────────────────────────────────────────────────
+// --- Controllers --------------------------------------------------------------
 builder.Services.AddControllers()
     .AddApplicationPart(typeof(ProductService.API.ProductAPI).Assembly);
 
-// ─── Swagger ──────────────────────────────────────────────────────────────────
+// --- Swagger ------------------------------------------------------------------
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -53,7 +54,7 @@ builder.Services.AddSwaggerGen(c =>
     if (File.Exists(xmlPath)) c.IncludeXmlComments(xmlPath);
 });
 
-// ─── CORS ─────────────────────────────────────────────────────────────────────
+// --- CORS ---------------------------------------------------------------------
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
@@ -62,13 +63,18 @@ builder.Services.AddCors(options =>
     });
 });
 
-// ─── Health Checks ────────────────────────────────────────────────────────────
+// --- Health Checks ------------------------------------------------------------
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<DatabaseContext>();
 
+// --- ProblemDetails (RFC 7807) ------------------------------------------------
+// Global exception handling — unhandled exceptions become structured JSON responses.
+// Controllers are kept clean of try/catch; errors surface here automatically.
+builder.Services.AddProblemDetails();
+
 var app = builder.Build();
 
-// ─── Auto-migrate on startup ──────────────────────────────────────────────────
+// --- Auto-migrate on startup --------------------------------------------------
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<DatabaseContext>();
@@ -76,7 +82,10 @@ using (var scope = app.Services.CreateScope())
     catch (Exception ex) { Console.WriteLine($"Migration failed: {ex.Message}"); }
 }
 
-// ─── Middleware pipeline ──────────────────────────────────────────────────────
+// --- Middleware pipeline -------------------------------------------------------
+// UseExceptionHandler must be early in the pipeline so it catches all downstream errors
+app.UseExceptionHandler();
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
