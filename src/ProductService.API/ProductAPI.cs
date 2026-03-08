@@ -53,6 +53,33 @@ namespace ProductService.API
             }
         }
 
+        [HttpGet("paged")]
+        public async Task<IActionResult> GetPaged([FromQuery] int page = 1, [FromQuery] int size = 10)
+        {
+            if (page < 1 || size < 1 || size > 100)
+                return BadRequest("page must be >= 1 and size must be between 1 and 100.");
+
+            try
+            {
+                _logger.LogInformation("Getting paged products: page={Page}, size={Size}", page, size);
+                var result = await _productServices.GetPagedProductsAsync(page, size, HttpContext.RequestAborted);
+
+                return Ok(new
+                {
+                    data = ProductContract.ToContracts(result.Items, _mapper),
+                    page = result.PageNumber,
+                    size = result.PageSize,
+                    total = result.TotalItems,
+                    totalPages = result.TotalPages
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting paged products");
+                return StatusCode(500, "Internal server error");
+            }
+        }
+
         [HttpGet("{id:long}")]
         public async Task<IActionResult> GetById([FromRoute] long id)
         {
@@ -132,31 +159,6 @@ namespace ProductService.API
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error deleting product {Id}", id);
-                return StatusCode(500, "Internal server error");
-            }
-        }
-
-        [HttpGet("paged")]
-        public async Task<IActionResult> GetPaged([FromQuery] int page = 1, [FromQuery] int size = 10)
-        {
-            try
-            {
-                _logger.LogInformation("Getting paged products: page={Page}, size={Size}", page, size);
-                var products = await _productServices.GetAllProducts();
-                var paged = products.Skip((page - 1) * size).Take(size).ToList();
-
-                return Ok(new
-                {
-                    data = ProductContract.ToContracts(paged, _mapper),
-                    page,
-                    size,
-                    total = products.Count,
-                    totalPages = (int)Math.Ceiling(products.Count / (double)size)
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error getting paged products");
                 return StatusCode(500, "Internal server error");
             }
         }

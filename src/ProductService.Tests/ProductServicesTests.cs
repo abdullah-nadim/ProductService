@@ -153,6 +153,35 @@ public class ProductServicesTests : IDisposable
         Assert.DoesNotContain(activeProducts, p => p.Id == model.Id);
     }
 
+    // ── GetPagedProductsAsync ──────────────────────────────────────────────────
+
+    [Fact]
+    public async Task GetPagedProductsAsync_ShouldReturnCorrectPage()
+    {
+        for (int i = 1; i <= 15; i++)
+            await _sut.CreateProduct(BuildProduct($"Product{i}", $"SKU-{i:D3}"));
+
+        var result = await _sut.GetPagedProductsAsync(2, 5);
+
+        Assert.Equal(5, result.Items.Count);
+        Assert.Equal(2, result.PageNumber);
+        Assert.Equal(15, result.TotalItems);
+        Assert.Equal(3, result.TotalPages);
+    }
+
+    [Fact]
+    public async Task GetPagedProductsAsync_ShouldOnlyReturnActiveNonDeleted()
+    {
+        for (int i = 1; i <= 5; i++)
+            await _sut.CreateProduct(BuildProduct($"Active{i}", $"ACT-{i}"));
+        await _sut.CreateProduct(BuildProduct("Inactive", "INA-001", isActive: false));
+
+        var result = await _sut.GetPagedProductsAsync(1, 10);
+
+        Assert.Equal(5, result.TotalItems);
+        Assert.All(result.Items, p => Assert.True(p.IsActive));
+    }
+
     // ── AdjustStockAsync ───────────────────────────────────────────────────────
 
     [Fact]

@@ -1,3 +1,4 @@
+using Core.Models;
 using Microsoft.EntityFrameworkCore;
 using ProductService.Models;
 using ProductService.Models.Repositories;
@@ -13,4 +14,7 @@ public class ProductRepository : Repository<ProductModel>, IProductRepository
 
     public async Task<ProductModel?> ReadBySkuAsync(string sku, CancellationToken cancellationToken = default)
         => await ReadAsync(p => p.Sku == sku && !p.IsDeleted, cancellationToken);
+
+    public async Task<PagedEntities<ProductModel>> ReadManyPagedAsync(int pageNumber, int pageSize, CancellationToken cancellationToken = default)
+        => await ReadManyAsync(p => p.IsActive && !p.IsDeleted, pageNumber, pageSize, cancellationToken);
 }

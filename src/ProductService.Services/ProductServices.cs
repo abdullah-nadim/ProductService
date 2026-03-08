@@ -1,3 +1,4 @@
+using Core.Models;
 using Infrastructure.Redis.Configuration;
 using Infrastructure.Redis.Services;
 using Microsoft.Extensions.Logging;
@@ -185,5 +186,11 @@ public class ProductServices : BaseServices, IProductServices
 
         using IRepositoryFactory directFactory = new Repository.RepositoryFactory(_Context);
         return await directFactory.GetProductRepository().ReadManyActiveAsync();
+    }
+
+    public async Task<PagedEntities<ProductModel>> GetPagedProductsAsync(int pageNumber, int pageSize, CancellationToken cancellationToken = default)
+    {
+        using IRepositoryFactory factory = new Repository.RepositoryFactory(_Context);
+        return await factory.GetProductRepository().ReadManyPagedAsync(pageNumber, pageSize, cancellationToken);
     }
 }

@@ -1,3 +1,4 @@
+using Core.Models;
 using ProductService.Models;
 
 namespace ProductService.Models;
@@ -11,4 +12,5 @@ public interface IProductServices
     Task<List<ProductModel>> GetAllActiveProducts();
     Task DeleteProduct(long id);
     Task AdjustStockAsync(long productId, int quantityChange);
+    Task<PagedEntities<ProductModel>> GetPagedProductsAsync(int pageNumber, int pageSize, CancellationToken cancellationToken = default);
 }
