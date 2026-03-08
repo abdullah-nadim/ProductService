@@ -10,4 +10,5 @@ public interface IProductServices
     Task<List<ProductModel>> GetAllProducts();
     Task<List<ProductModel>> GetAllActiveProducts();
     Task DeleteProduct(long id);
+    Task AdjustStockAsync(long productId, int quantityChange);
 }

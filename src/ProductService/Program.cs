@@ -28,7 +28,7 @@ builder.Services.AddSingleton<RabbitMQService>();
 builder.Services.AddSingleton<IRabbitMQService>(sp => sp.GetRequiredService<RabbitMQService>());
 builder.Services.AddHostedService(sp => sp.GetRequiredService<RabbitMQService>());
 builder.Services.AddScoped<IProductEventPublisher, ProductEventPublisher>();
-builder.Services.AddSingleton<IProductEventSubscriber, ProductEventSubscriber>();
+builder.Services.AddHostedService<ProductEventSubscriber>();
 
 // ─── Application Services ─────────────────────────────────────────────────────
 builder.Services.AddScoped<IProductServices, ProductServices>();
@@ -92,9 +92,5 @@ app.UseCors("AllowAll");
 app.UseAuthorization();
 app.MapHealthChecks("/health");
 app.MapControllers();
-
-// ─── Start event subscriber ───────────────────────────────────────────────────
-var eventSubscriber = app.Services.GetRequiredService<IProductEventSubscriber>();
-await eventSubscriber.StartAsync(CancellationToken.None);
 
 app.Run();

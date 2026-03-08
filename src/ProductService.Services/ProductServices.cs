@@ -148,6 +148,25 @@ public class ProductServices : BaseServices, IProductServices
         }
     }
 
+    public async Task AdjustStockAsync(long productId, int quantityChange)
+    {
+        using IRepositoryFactory factory = new Repository.RepositoryFactory(_Context);
+        var repo = factory.GetProductRepository();
+        var product = await repo.ReadAsync(productId);
+        product.StockQuantity = Math.Max(0, product.StockQuantity + quantityChange);
+        repo.Update(product);
+        factory.Commit();
+
+        _logger.LogInformation("Adjusted stock for product {Id} by {Change}. New qty: {Qty}",
+            productId, quantityChange, product.StockQuantity);
+
+        if (_cacheService != null)
+        {
+            await _cacheService.RemoveAsync($"product:{productId}");
+            await _cacheService.RemoveByPatternAsync("product:list:*");
+        }
+    }
+
     public async Task<List<ProductModel>> GetAllActiveProducts()
     {
         if (_cacheService != null)

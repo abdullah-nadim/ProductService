@@ -153,6 +153,34 @@ public class ProductServicesTests : IDisposable
         Assert.DoesNotContain(activeProducts, p => p.Id == model.Id);
     }
 
+    // ── AdjustStockAsync ───────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task AdjustStockAsync_ShouldDecrementStock_WhenOrderPlaced()
+    {
+        var model = BuildProduct("Widget", "WGT-001");
+        model.StockQuantity = 50;
+        await _sut.CreateProduct(model);
+
+        await _sut.AdjustStockAsync(model.Id, -10);
+
+        var saved = await _context.Products.FindAsync(model.Id);
+        Assert.Equal(40, saved!.StockQuantity);
+    }
+
+    [Fact]
+    public async Task AdjustStockAsync_ShouldNotGoBelowZero_WhenQuantityExceedsStock()
+    {
+        var model = BuildProduct("Widget", "WGT-002");
+        model.StockQuantity = 5;
+        await _sut.CreateProduct(model);
+
+        await _sut.AdjustStockAsync(model.Id, -100);
+
+        var saved = await _context.Products.FindAsync(model.Id);
+        Assert.Equal(0, saved!.StockQuantity);
+    }
+
     // ── Helpers ────────────────────────────────────────────────────────────────
 
     private static ProductModel BuildProduct(string name, string sku, bool isActive = true) => new()
